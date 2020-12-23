@@ -17,6 +17,8 @@
 
 #include "PluginDefinition.h"
 #include "menuCmdID.h"
+#include <string>
+#include <list>
 
 //
 // The plugin data that Notepad++ needs
@@ -58,8 +60,8 @@ void commandMenuInit()
     //            ShortcutKey *shortcut,          // optional. Define a shortcut to trigger this command
     //            bool check0nInit                // optional. Make this menu item be checked visually
     //            );
-    setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
-    setCommand(1, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
+    setCommand(0, TEXT("Format setParticleParams argument"), setParticlesParamsFormatter, NULL, false);
+    //setCommand(1, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
 }
 
 //
@@ -93,11 +95,8 @@ bool setCommand(size_t index, TCHAR *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey 
 //----------------------------------------------//
 //-- STEP 4. DEFINE YOUR ASSOCIATED FUNCTIONS --//
 //----------------------------------------------//
-void hello()
+void setParticlesParamsFormatter()
 {
-    // Open a new document
-    ::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_NEW);
-
     // Get the current scintilla
     int which = -1;
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&which);
@@ -105,12 +104,86 @@ void hello()
         return;
     HWND curScintilla = (which == 0)?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
 
-    // Say hello now :
-    // Scintilla control has no Unicode mode, so we use (char *) here
-    ::SendMessage(curScintilla, SCI_SETTEXT, 0, (LPARAM)"Hello, Notepad++!");
-}
+    // Get selected text
+    size_t start = ::SendMessage(curScintilla, SCI_GETSELECTIONSTART, 0, 0);
+    size_t end = ::SendMessage(curScintilla, SCI_GETSELECTIONEND, 0, 0);
+    if (end < start)
+    {
+        size_t tmp = start;
+        start = end;
+        end = tmp;
+    }
 
-void helloDlg()
-{
-    ::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
+    size_t textLen = end - start;
+    if (textLen == 0) return;
+
+    char* pText = new char[textLen + 1];
+    ::SendMessage(curScintilla, SCI_GETSELTEXT, 0, (LPARAM)pText);
+
+    std::list<std::string> annotations = { 
+        "p3dPath, Ntieth, Index, FrameCount, Loop", 
+        "animationName (obsolete parameter that was meant to play .rtm anims, should be empty)",
+        "particleType (\"Billboard\" or \"SpaceObject\")",
+        "timerPeriod",
+        "lifeTime",
+        "position",
+        "moveVelocity",
+        "rotationVelocity (rotations per second)",
+        "weight (weight of the particle, kg)",
+        "volume (volume of the particle in m3)",
+        "rubbing (determines how much particles blown by winds)",
+        "size (array of particle size along its lifetime)",
+        "color (array of [RGBA] arrays)",
+        "animationSpeed",
+        "randomDirectionPeriod",
+        "randomDirectionIntensity",
+        "onTimerScript",
+        "beforeDestroyScript",
+        "this (if this parameter isn't objNull, the particle source will be attached to the object, the generation of particles stops when beyond Object View Distance)",
+        "angle (optional)",
+        "onSurface (optional)",
+        "bounceOnSurface (optional, default -1. Coef of bounce in collision with ground, 0..1 for collisions, -1 to disable collision. Should be used soberly as it has a significant impact on performance)",
+        "emissiveColor (optional, array of [RGBA] arrays, needs to match 'color' values and be 100x times the RGB color values. Alpha is not used)",
+        "vectorDir (optional, sets the default direction for SpaceObject particles)"
+    };
+
+    // Adding annotations to each parameter followed by ','
+    std::string newText = "";
+    int squareBrackets = 0;
+    for (size_t i = 0; i < textLen; ++i) {
+        newText += pText[i];
+        if (pText[i] == '[') ++squareBrackets;
+        if (pText[i] == ']') --squareBrackets;
+        if (pText[i] == ',' && squareBrackets == 1) { 
+            std::string annotation = "";
+            if (!annotations.empty()) {
+                annotation = annotations.front();
+                annotations.pop_front();
+                annotation = " // " + annotation + "\n";
+            }
+            newText += annotation;
+        }
+    }
+
+    // Edge case. The last parameter does not have an ending ',' 
+    if (!annotations.empty()) { // No sense inserting something if there are no more annotations left
+        bool insert = false;
+        for (size_t i = newText.length()-1; i > 0; --i) {
+            if (insert) {
+                std::string annotation = "";
+                if (!annotations.empty()) {
+                    annotation = annotations.front();
+                    annotations.pop_front();
+                    annotation = " // " + annotation + "\n";
+                }
+                newText = newText.insert(i+1, annotation.c_str());
+                break;
+            }
+            if (newText[i] == ']') insert = true;
+        }
+    }
+
+    ::SendMessage(curScintilla, SCI_REPLACESEL, 0, (LPARAM)newText.c_str());
+    
+    delete[] pText;
 }
