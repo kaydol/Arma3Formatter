@@ -1,0 +1,2 @@
+C:\Users\volya\source\repos\plugintemplate-3.1\vs.proj\x64\Debug\Arma3Formatter.dll
+C:\Users\volya\source\repos\plugintemplate-3.1\vs.proj\x64\Debug\Arma3Formatter.pdb

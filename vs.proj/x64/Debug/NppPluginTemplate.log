@@ -1,0 +1,8 @@
+﻿D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(467,5): warning MSB8028: промежуточный каталог (x64\Debug\) содержит файлы, которые используются совместно с другим проектом (NppPluginTemplate.vcxproj).  Это может привести к ошибкам очистки и перестроения.
+  GoToLineDlg.cpp
+  StaticDialog.cpp
+  NppPluginDemo.cpp
+  PluginDefinition.cpp
+  Создание кода...
+     Создается библиотека C:\Users\volya\source\repos\plugintemplate-3.1\vs.proj\x64\Debug\Arma3Formatter.lib и объект C:\Users\volya\source\repos\plugintemplate-3.1\vs.proj\x64\Debug\Arma3Formatter.exp
+  NppPluginTemplate.vcxproj -> C:\Users\volya\source\repos\plugintemplate-3.1\vs.proj\x64\Debug\Arma3Formatter.dll
